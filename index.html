@@ -207,7 +207,7 @@
 
     lucide.createIcons();
     // Automatyczne ładowanie czytelnia.csv przy starcie
-fetch('../czytelnia.csv')
+fetch('czytelnia.csv')
   .then(response => {
     if (!response.ok) throw new Error('Brak pliku czytelnia.csv');
     return response.text();
