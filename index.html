@@ -223,11 +223,18 @@ fetch('czytelnia.csv')
         enabledDates = [...new Set(allData.map(row => row['Data emisji']).filter(Boolean))];
 
         flatpickr("#dateFilter", {
-          dateFormat: "Y-m-d",
-          locale: "pl",
-          enable: enabledDates,
-          onChange: updateView
-        });
+  dateFormat: "Y-m-d",
+  locale: "pl",
+  enable: enabledDates,
+  onChange: function(selectedDates, dateStr) {
+    // Reset pozostałych filtrów
+    selectedLetter = '';
+    document.getElementById('searchInput').value = '';
+    document.getElementById('sortSelect').value = '';
+    generateLetterFilter();
+    updateView();
+  }
+});
 
         fuse = new Fuse(allData, {
           keys: ['Tytuł', 'Autor', 'Tłumacz', 'Opis audycji'],
