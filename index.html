@@ -167,6 +167,8 @@
         skipEmptyLines: true,
         complete: function (results) {
           allData = results.data;
+          document.getElementById('loadError').classList.add('hidden');
+
           enabledDates = [...new Set(allData.map(row => row['Data emisji']).filter(Boolean))];
 
           flatpickr("#dateFilter", {
