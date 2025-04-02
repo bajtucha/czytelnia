@@ -6,7 +6,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
   <style>
@@ -35,13 +34,12 @@
     <section class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm mb-6">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
         <label class="flex items-center gap-2 cursor-pointer bg-[#007D6D] text-white px-3 py-2 rounded-lg shadow hover:bg-[#005F53] transition text-sm">
-          <i data-lucide="upload" class="w-4 h-4"></i>
-          <span>Dane</span>
+          <span>📁 Dane</span>
           <input type="file" id="csvFile" accept=".csv" class="hidden" />
         </label>
         <div class="relative col-span-2">
           <input type="text" id="searchInput" placeholder="Szukaj tytułu, autora..." class="w-full pl-10 p-2 border border-gray-300 rounded shadow-sm">
-          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">🔍</span>
         </div>
         <select id="sortSelect" class="p-2 border border-gray-300 rounded shadow-sm">
           <option value="">Sortuj według...</option>
@@ -55,14 +53,20 @@
         <input type="text" id="dateFilter" placeholder="Wybierz datę" class="p-2 border border-gray-300 rounded shadow-sm" />
         <div class="flex gap-2">
           <button id="openLetterModal" class="flex items-center gap-1 px-3 py-2 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 transition">
-            <i data-lucide="filter" class="w-4 h-4"></i> Litera
+            <span>🔠 Litera</span>
           </button>
           <button id="clearFilters" class="flex items-center gap-1 px-3 py-2 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 transition">
-            <i data-lucide="eraser" class="w-4 h-4"></i> Reset
+            <span>🧽 Reset</span>
           </button>
         </div>
       </div>
     </section>
+
+    <!-- Fallback: komunikat błędu ładowania -->
+    <div id="loadError" class="hidden bg-red-100 text-red-800 border border-red-200 rounded p-4 mb-6">
+      <strong>Błąd ładowania danych:</strong> Nie udało się załadować pliku <code>czytelnia.csv</code>.
+      Upewnij się, że plik istnieje lub spróbuj załadować dane ręcznie.
+    </div>
 
     <div id="cardsContainer" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
   </main>
@@ -163,21 +167,20 @@
         skipEmptyLines: true,
         complete: function (results) {
           allData = results.data;
-
-          // Unikalne daty do kalendarza
           enabledDates = [...new Set(allData.map(row => row['Data emisji']).filter(Boolean))];
 
           flatpickr("#dateFilter", {
-  dateFormat: "Y-m-d",
-  locale: "pl",
-  enable: enabledDates,
-  onChange: updateView
-});
+            dateFormat: "Y-m-d",
+            locale: "pl",
+            enable: enabledDates,
+            onChange: updateView
+          });
 
           fuse = new Fuse(allData, {
             keys: ['Tytuł', 'Autor', 'Tłumacz', 'Opis audycji'],
             threshold: 0.4,
           });
+
           generateLetterFilter();
           updateView();
         }
@@ -205,51 +208,48 @@
       if (e.target === modal) modal.classList.add('hidden');
     });
 
-    lucide.createIcons();
-    // Automatyczne ładowanie czytelnia.csv przy starcie
-fetch('czytelnia.csv')
-  .then(response => {
-    if (!response.ok) throw new Error('Brak pliku czytelnia.csv');
-    return response.text();
-  })
-  .then(csvText => {
-    Papa.parse(csvText, {
-      header: true,
-      skipEmptyLines: true,
-      complete: function (results) {
-        allData = results.data;
+    // lucide.createIcons(); // <-- Tymczasowo wyłączone
 
-        // Unikalne daty do flatpickr
-        enabledDates = [...new Set(allData.map(row => row['Data emisji']).filter(Boolean))];
+    fetch('czytelnia.csv')
+      .then(response => {
+        if (!response.ok) throw new Error('Brak pliku czytelnia.csv');
+        return response.text();
+      })
+      .then(csvText => {
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: function (results) {
+            allData = results.data;
+            enabledDates = [...new Set(allData.map(row => row['Data emisji']).filter(Boolean))];
 
-        flatpickr("#dateFilter", {
-  dateFormat: "Y-m-d",
-  locale: "pl",
-  enable: enabledDates,
-  onChange: function(selectedDates, dateStr) {
-    // Reset pozostałych filtrów
-    selectedLetter = '';
-    document.getElementById('searchInput').value = '';
-    document.getElementById('sortSelect').value = '';
-    generateLetterFilter();
-    updateView();
-  }
-});
+            flatpickr("#dateFilter", {
+              dateFormat: "Y-m-d",
+              locale: "pl",
+              enable: enabledDates,
+              onChange: function () {
+                selectedLetter = '';
+                document.getElementById('searchInput').value = '';
+                document.getElementById('sortSelect').value = '';
+                generateLetterFilter();
+                updateView();
+              }
+            });
 
-        fuse = new Fuse(allData, {
-          keys: ['Tytuł', 'Autor', 'Tłumacz', 'Opis audycji'],
-          threshold: 0.4,
+            fuse = new Fuse(allData, {
+              keys: ['Tytuł', 'Autor', 'Tłumacz', 'Opis audycji'],
+              threshold: 0.4,
+            });
+
+            generateLetterFilter();
+            updateView();
+          }
         });
-
-        generateLetterFilter();
-        updateView();
-      }
-    });
-  })
-  .catch(err => {
-    console.warn('Nie udało się automatycznie załadować danych:', err.message);
-  });
-
+      })
+      .catch(err => {
+        console.warn('Nie udało się automatycznie załadować danych:', err.message);
+        document.getElementById('loadError').classList.remove('hidden');
+      });
   </script>
 </body>
 </html>
